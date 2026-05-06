@@ -2,6 +2,7 @@
 #define MICROMC_BLOCK_HPP
 
 #include <object/blocktransform.hpp>
+#include <render/mesh.hpp>
 
 class Block {
 public:
@@ -9,6 +10,8 @@ public:
     ~Block();
 
     unsigned int id;
+
+    Mesh* mesh = nullptr;
 
     BlockTransform transform;
 };

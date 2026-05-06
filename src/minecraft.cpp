@@ -17,13 +17,6 @@ int randomInt(int min, int max) {
     return dist(gen);
 }
 
-glm::ivec3 indexToCoord(int i, int sizeX, int sizeY, int sizeZ) {
-    int x = i % sizeX;
-    int y = (i / sizeX) % sizeY;
-    int z = i / (sizeX * sizeY);
-    return {x, y, z};
-}
-
 Minecraft* Minecraft::instance;
 
 Minecraft::Minecraft() : camera(75.0f, nullptr) {
@@ -38,14 +31,12 @@ Minecraft::Minecraft() : camera(75.0f, nullptr) {
 
     camera.window = &window;
     player.transform.position = glm::vec3(0, 0, 1);
-    
-    for (int i = 0; i < world.size.x * world.size.y * world.size.z; i++) {
-        Block block {(unsigned int) randomInt(0, 1)};
-        block.transform.position = indexToCoord(i, world.size.x, world.size.y, world.size.z);
-        world.blocks.push_back(block);
-    }
 
     world.init();
+
+    world.generate(randomInt(0, 1000));
+
+    world.rebuildMeshes();
 
     blockRegistry.add(BlockEntry {0, nullptr}); // air
 

@@ -1,4 +1,4 @@
-project('fuckcraft', ['c', 'cpp'])
+project('micromc', ['c', 'cpp'])
 
 glfw_dep = dependency('glfw3', required: true)
 
@@ -29,11 +29,12 @@ srcs = [
     'src/world/block.cpp',
     'src/world/world.cpp',
     'src/world/blockregistry.cpp',
-    'src/loader/png.cpp'
+    'src/loader/png.cpp',
+    'src/world/generator.cpp'
 ]
 
 executable(
-    'fuckcraft',
+    'micromc',
     srcs,
     dependencies: [glfw_dep, glm_dep, spng_dep],
     link_with: [glad_lib],
