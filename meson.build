@@ -33,10 +33,25 @@ srcs = [
     'src/world/generator.cpp'
 ]
 
+imgui_inc = include_directories(['imgui', 'imgui/backends'])
+imgui_srcs = [
+    'imgui/imgui.cpp',
+    'imgui/imgui_draw.cpp',
+    'imgui/imgui_tables.cpp',
+    'imgui/imgui_widgets.cpp',
+    'imgui/backends/imgui_impl_glfw.cpp',
+    'imgui/backends/imgui_impl_opengl3.cpp'
+]
+imgui_lib = static_library(
+    'imgui',
+    imgui_srcs,
+    include_directories: imgui_inc
+)
+
 executable(
     'micromc',
     srcs,
     dependencies: [glfw_dep, glm_dep, spng_dep],
-    link_with: [glad_lib],
-    include_directories: [glad_inc, include_directories('src')]
+    link_with: [glad_lib, imgui_lib],
+    include_directories: [glad_inc, include_directories('src'), imgui_inc]
 )

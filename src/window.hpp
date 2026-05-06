@@ -33,6 +33,8 @@ public:
 
     void setCursorState(bool state);
 
+    GLFWwindow* getWindow();
+
 private:
     GLFWwindow* window;
 

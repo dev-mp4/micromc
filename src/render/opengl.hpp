@@ -10,8 +10,8 @@ public:
     static void enableCulling();
     static void disableCulling();
     static void toggleWireframe();
-
-private:
+    static void updateWireframe();
+    
     static bool wireframe;
 };
 

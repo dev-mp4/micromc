@@ -37,6 +37,10 @@ void OpenGL::disableCulling() {
 
 void OpenGL::toggleWireframe() {
     wireframe = !wireframe;
+    updateWireframe();
+}
+
+void OpenGL::updateWireframe() {
     if (wireframe) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     } else {

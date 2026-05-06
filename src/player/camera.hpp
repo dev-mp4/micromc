@@ -6,12 +6,13 @@
 
 class Camera {
 public:
-    Camera(float fov, Window* window);
+    Camera(float fov, Window* window, float farPlane = 100.0f);
     ~Camera();
 
     glm::mat4 getProjView(EntityTransform transform);
 
     float fov;
+    float farPlane;
 
     Window* window;
 };

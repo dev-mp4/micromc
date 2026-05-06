@@ -8,6 +8,10 @@
 #include <player/player.hpp>
 #include <stdexcept>
 #include <random>
+#include <imgui.h>
+#include <imgui_impl_opengl3.h>
+#include <imgui_impl_glfw.h>
+#include <string>
 
 int randomInt(int min, int max) {
     static std::random_device rd;
@@ -42,6 +46,17 @@ Minecraft::Minecraft() : camera(75.0f, nullptr) {
 
     Texture* stone = Texture::loadFromImage(PNG::loadFromFile("assets/minecraft/textures/blocks/stone.png"));
     blockRegistry.add(BlockEntry {1, stone});
+
+    // init IMGUI
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplGlfw_InitForOpenGL(window.getWindow(), true);
+    ImGui_ImplOpenGL3_Init("#version 330");
 }
 
 Minecraft::~Minecraft() {
@@ -62,8 +77,6 @@ void Minecraft::update() {
 
     input.poll();
 
-    if (input.getKeyDown(GLFW_KEY_F2)) OpenGL::toggleWireframe();
-
     running = running && !window.shouldClose();
 
     OpenGL::clear(0.55f, 0.9f, 1.0f);
@@ -71,6 +84,36 @@ void Minecraft::update() {
     player.update();
 
     world.render(camera.getProjView(player.transform));
+
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::Begin("World");
+
+    int seed = 0;
+    ImGui::InputInt("World seed", &seed);
+    if (ImGui::Button("Random seed")) {
+        seed = randomInt(0, 10000000);
+    }
+
+    if (ImGui::Button("Regenerate world")) {
+        world.generate(seed);
+        world.rebuildMeshes();
+    }
+
+    ImGui::End();
+
+    ImGui::Begin("Render");
+
+    if (ImGui::Checkbox("Wireframe mode", &OpenGL::wireframe)) OpenGL::updateWireframe();
+    
+    ImGui::Text("%01f ms | %d FPS", deltaTime * 1000, (int)(1 / deltaTime));
+
+    ImGui::End();
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     
     window.update();
 }
@@ -82,6 +125,10 @@ void Minecraft::run() {
 }
 
 void Minecraft::destroy() {
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
     input.destroy();
     window.destroy();
 }

@@ -68,3 +68,7 @@ void Window::setMousePosCallback(CursorPosCallbackFn callback) {
 void Window::setCursorState(bool state) {
     glfwSetInputMode(window, GLFW_CURSOR, state ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
 }
+
+GLFWwindow* Window::getWindow() {
+    return window;
+}
