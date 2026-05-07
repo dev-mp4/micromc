@@ -36,6 +36,8 @@ public:
     float deltaTime;
     float lastTime;
 
+    int drawCalls;
+
 private:
     static Minecraft* instance;
 

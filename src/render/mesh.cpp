@@ -1,4 +1,5 @@
 #include "mesh.hpp"
+#include "minecraft.hpp"
 #include <glad/glad.h>
 #include <numeric>
 
@@ -8,9 +9,17 @@ Mesh::Mesh(unsigned int vao, unsigned int vbo, unsigned int ebo, unsigned int in
 Mesh::~Mesh() {}
 
 void Mesh::draw() {
+    Minecraft::getInstance()->drawCalls++;
+
     glBindVertexArray(vao);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, nullptr);
+
+    if (ebo == 0) {
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glDrawArrays(GL_TRIANGLES, 0, indicesCount); // reuse indicesCount as vertices count
+    } else {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+        glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, nullptr);
+    }
 }
 
 void Mesh::destroy() {
@@ -21,6 +30,32 @@ void Mesh::destroy() {
 
 Mesh* Mesh::create(const std::vector<float>& vertices, const std::vector<unsigned int>& indices, const std::vector<unsigned char>& attributes) {
     unsigned int vao, vbo, ebo, indicesCount;
+
+    if (indices.size() == 0) {
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
+        
+        glGenBuffers(1, &vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+        
+        unsigned int totalStride = std::accumulate(attributes.begin(), attributes.end(), 0);
+
+        indicesCount = vertices.size() / totalStride;
+
+        unsigned int stride = 0;
+        unsigned int index = 0;
+        for (unsigned char attr : attributes) {
+            glVertexAttribPointer(index, attr, GL_FLOAT, GL_FALSE, totalStride * sizeof(float), (GLvoid*)(stride * sizeof(float)));
+            glEnableVertexAttribArray(index);
+            stride += attr;
+            index++;
+        }
+
+        glBindVertexArray(0);
+
+        return new Mesh(vao, vbo, 0, indicesCount);
+    }
 
     indicesCount = indices.size();
 

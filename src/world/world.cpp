@@ -1,5 +1,8 @@
 #include "world.hpp"
+#include "world/chunk.hpp"
 #include "world/generator.hpp"
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/vector_int2.hpp>
 #include <minecraft.hpp>
 #include <render/opengl.hpp>
 #include <world/block.hpp>
@@ -7,24 +10,10 @@
 #include <util/block.hpp>
 #include <render/mesh.hpp>
 #include <util/block.hpp>
-#include <vector>
 #include <util/file.hpp>
 
-static const glm::ivec3 dirs[6] = {
-    { 0,  0,  1}, // front
-    { 0,  0, -1}, // back
-    {-1,  0,  0}, // left
-    { 1,  0,  0}, // right
-    { 0,  1,  0}, // top
-    { 0, -1,  0}  // bottom
-};
-
-World::World() {}
+World::World() : generator(0) {}
 World::~World() {}
-
-void addFace(std::vector<float>& dst, const std::array<float, 30>& src) {
-    dst.insert(dst.end(), src.begin(), src.end());
-}
 
 void World::init() {
     shader = Shader::loadFromGLSL(readFile("assets/minecraft/shaders/mesh.vsh"), readFile("assets/minecraft/shaders/mesh.fsh"));
@@ -36,84 +25,87 @@ void World::render(glm::mat4 projview) {
     OpenGL::enableDepth();
     OpenGL::enableCulling();
 
-    for (auto& block : blocks) {
-        if (block.id == 0 || block.mesh == nullptr) continue; // skip air
+    for (auto& [_, chunk] : chunks) {
+        if (chunk.mesh == nullptr) continue;
 
-        BlockEntry entry = mc->blockRegistry.get(block.id);
+        BlockEntry entry = mc->blockRegistry.get(1);
+
+        glm::mat4 model(1.0f);
+        model = glm::translate(model, glm::vec3(chunk.position.x * CHUNK_WIDTH, 0, chunk.position.y * CHUNK_DEPTH));
 
         shader->use();
         entry.texture->bind(0);
 
-        shader->setUniform("model", block.transform.getMatrix());
+        shader->setUniform("model", model);
         shader->setUniform("projview", projview);
 
-        block.mesh->draw();
+        chunk.mesh->draw();
     }
 
     OpenGL::disableDepth();
     OpenGL::disableCulling();
 }
 
-Block World::getBlock(glm::ivec3 pos) {
-    return blocks[toIndex(pos)];
-}
+void World::generateChunk(glm::ivec2 pos) {
+    glm::ivec3 baseBlockPos(
+        pos.x * CHUNK_WIDTH,
+        0,
+        pos.y * CHUNK_DEPTH
+    );
 
-bool World::isSolid(glm::ivec3 pos) {
-    return inBounds(pos) && getBlock(pos).id != 0;
-}
+    Chunk chunk;
 
-int World::toIndex(glm::ivec3 pos) {
-    return pos.x + pos.y * size.x + pos.z * size.x * size.y;
-}
+    int size = CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_DEPTH;
 
-bool World::inBounds(glm::ivec3 pos) {
-    return pos.x >= 0 && pos.y >= 0 && pos.z >= 0 &&
-           pos.x < size.x && pos.y < size.y && pos.z < size.z;
-}
+    for (int i = 0; i < size; i++) {
+        glm::ivec3 localPos = Chunk::toPosition(i);
+        glm::ivec3 worldPos = baseBlockPos + localPos;
 
-glm::ivec3 World::toPosition(int index) {
-    int x = index % size.x;
-    int y = (index / size.x) % size.y;
-    int z = index / (size.x * size.y);
-    return glm::ivec3(x, y, z);
+        chunk.blocks[i] = generator.getBlock(worldPos);
+    }
+
+    chunk.position = pos;
+    chunks[pos] = chunk;
+    chunks[pos].rebuildMesh();
 }
 
 void World::generate(int seed) {
-    int blocksCount = size.x * size.y * size.z;
+    generator = Generator(seed);
 
-    Generator gen(seed);
-
-    blocks.clear();
-    blocks.reserve(blocksCount);
-
-    for (int i = 0; i < blocksCount; i++) {
-        blocks.push_back(gen.getBlock(toPosition(i)));
+    for (int z = 0; z < size.y; z++) {
+        for (int x = 0; x < size.x; x++) {
+            generateChunk(glm::ivec2(x, z));
+        }
     }
 }
 
-void World::rebuildMeshes() {
-    for (auto& block : blocks) {
-        if (block.id == 0) continue; // skip air
+Block World::getBlock(glm::ivec3 pos) {
+    if (!inBounds(pos)) return Block(0);
 
-        std::vector<float> vertices = {};
+    int cx = std::floor((float)pos.x / CHUNK_WIDTH);
+    int cz = std::floor((float)pos.z / CHUNK_DEPTH);
+    glm::ivec2 chunkKey(cx, cz);
 
-        glm::ivec3 pos = block.transform.position;
-
-        if (!isSolid(pos + dirs[0])) addFace(vertices, BLOCK_FRONT);
-        if (!isSolid(pos + dirs[1])) addFace(vertices, BLOCK_BACK);
-        if (!isSolid(pos + dirs[2])) addFace(vertices, BLOCK_LEFT);
-        if (!isSolid(pos + dirs[3])) addFace(vertices, BLOCK_RIGHT);
-        if (!isSolid(pos + dirs[4])) addFace(vertices, BLOCK_TOP);
-        if (!isSolid(pos + dirs[5])) addFace(vertices, BLOCK_BOTTOM);
-
-        if (vertices.size() == 0) continue; // skip covered block
-
-        std::vector<unsigned int> indices = {};
-
-        for (int i = 0; i < vertices.size(); i++) {
-            indices.push_back(i);
-        }
-
-        block.mesh = Mesh::create(vertices, indices, {3, 2});
+    auto it = chunks.find(chunkKey);
+    if (it == chunks.end()) {
+        return Block(0);
     }
+
+    int lx = pos.x % CHUNK_WIDTH;
+    int lz = pos.z % CHUNK_DEPTH;
+
+    if (lx < 0) lx += CHUNK_WIDTH;
+    if (lz < 0) lz += CHUNK_DEPTH;
+
+    return it->second.getBlock({lx, pos.y, lz});
+}
+
+bool World::isSolid(glm::ivec3 pos) {
+    return getBlock(pos).id != 0;
+}
+
+bool World::inBounds(glm::ivec3 pos) {
+    return pos.x >= 0 && pos.x < size.x * CHUNK_WIDTH &&
+            pos.y >= 0 && pos.y < CHUNK_HEIGHT &&
+            pos.z >= 0 && pos.z < size.y * CHUNK_DEPTH;
 }

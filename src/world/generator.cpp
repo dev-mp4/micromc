@@ -1,24 +1,14 @@
 #include "generator.hpp"
-#include <cmath>
 #include <world/block.hpp>
 
 Generator::Generator(int seed) : seed(seed) {}
 Generator::~Generator() {}
 
 Block Generator::getBlock(glm::ivec3 pos) {
-    Block block{0}; // start as air
+    Block block{1}; // start as stone
 
-    float frequency = 0.5f;
-    float amplitude = 5.0f;
-    float level = 1.0f;
-
-    float height = std::sin(pos.x * frequency) * amplitude + level;
-    if (height < 0) height = 1;
-
-    if (pos.y <= height) {
-        block.id = 1;
-        block.transform.position = pos;
-    }
+    if (pos.y > 6) block.id = 3;
+    if (pos.y == 9) block.id = 2;
 
     return block;
 }

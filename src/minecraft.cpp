@@ -23,7 +23,7 @@ int randomInt(int min, int max) {
 
 Minecraft* Minecraft::instance;
 
-Minecraft::Minecraft() : camera(75.0f, nullptr) {
+Minecraft::Minecraft() : camera(75.0f, nullptr), drawCalls(0) {
     instance = this;
 
     if (!window.init("Minecraft 2.0", 1280, 720, false)) {
@@ -38,14 +38,18 @@ Minecraft::Minecraft() : camera(75.0f, nullptr) {
 
     world.init();
 
-    world.generate(randomInt(0, 1000));
-
-    world.rebuildMeshes();
+    world.generate(0);
 
     blockRegistry.add(BlockEntry {0, nullptr}); // air
 
     Texture* stone = Texture::loadFromImage(PNG::loadFromFile("assets/minecraft/textures/blocks/stone.png"));
     blockRegistry.add(BlockEntry {1, stone});
+
+    Texture* grass = Texture::loadFromImage(PNG::loadFromFile("assets/minecraft/textures/blocks/grass_top.png"));
+    blockRegistry.add(BlockEntry {2, grass});
+
+    Texture* dirt = Texture::loadFromImage(PNG::loadFromFile("assets/minecraft/textures/blocks/dirt.png"));
+    blockRegistry.add(BlockEntry {3, dirt});
 
     // init IMGUI
 
@@ -99,7 +103,6 @@ void Minecraft::update() {
 
     if (ImGui::Button("Regenerate world")) {
         world.generate(seed);
-        world.rebuildMeshes();
     }
 
     ImGui::End();
@@ -110,11 +113,15 @@ void Minecraft::update() {
     
     ImGui::Text("%01f ms | %d FPS", deltaTime * 1000, (int)(1 / deltaTime));
 
+    ImGui::Text("%d draw calls", drawCalls);
+
     ImGui::End();
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     
+    drawCalls = 0;
+
     window.update();
 }
 

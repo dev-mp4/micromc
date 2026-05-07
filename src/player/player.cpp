@@ -19,6 +19,9 @@ void Player::update() {
 
     if (!mouseLocked) return;
 
+    if (mc->input.getKey(GLFW_KEY_LEFT_SHIFT)) speed = 20.0f;
+    else speed = 6.0f;
+
     if (mc->input.getKey(GLFW_KEY_W)) {
         transform.position += transform.forward * speed * mc->deltaTime;
     }

@@ -1,9 +1,10 @@
 #ifndef MICROMC_WORLD_HPP
 #define MICROMC_WORLD_HPP
 
+#include "world/generator.hpp"
+#include <world/chunk.hpp>
 #include <render/mesh.hpp>
 #include <render/shader.hpp>
-#include <vector>
 #include <world/block.hpp>
 #include <glm/glm.hpp>
 
@@ -12,21 +13,20 @@ public:
     World();
     ~World();
 
-    std::vector<Block> blocks;
+    std::unordered_map<glm::ivec2, Chunk> chunks;
 
-    glm::ivec3 size = glm::ivec3(100, 10, 100);
+    glm::ivec2 size = glm::ivec2(10, 10);
 
     void render(glm::mat4 projview);
     void init();
+    void generateChunk(glm::ivec2 pos);
     void generate(int seed);
 
     Block getBlock(glm::ivec3 pos);
     bool isSolid(glm::ivec3 pos);
-    int toIndex(glm::ivec3 pos);
-    glm::ivec3 toPosition(int index);
     bool inBounds(glm::ivec3 pos);
 
-    void rebuildMeshes();
+    Generator generator;
 
 private:
     Shader* shader;

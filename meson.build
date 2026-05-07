@@ -25,12 +25,12 @@ srcs = [
     'src/player/player.cpp',
     'src/minecraft.cpp',
     'src/object/entitytransform.cpp',
-    'src/object/blocktransform.cpp',
     'src/world/block.cpp',
     'src/world/world.cpp',
     'src/world/blockregistry.cpp',
     'src/loader/png.cpp',
-    'src/world/generator.cpp'
+    'src/world/generator.cpp',
+    'src/world/chunk.cpp'
 ]
 
 imgui_inc = include_directories(['imgui', 'imgui/backends'])

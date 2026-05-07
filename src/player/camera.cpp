@@ -5,7 +5,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 
-Camera::Camera(float fov, Window* window, float farPlane) : fov(fov), window(window), farPlane(farPlane) {}
+Camera::Camera(float fov, Window* window, float farPlane) : fov(fov), farPlane(farPlane), window(window) {}
 Camera::~Camera() {}
 
 glm::mat4 Camera::getProjView(EntityTransform transform) {

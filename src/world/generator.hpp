@@ -2,6 +2,7 @@
 #define MICROMC_GENERATOR_HPP
 
 #include <world/block.hpp>
+#include <glm/glm.hpp>
 
 class Generator {
 public:
