@@ -66,7 +66,6 @@ void World::generateChunk(glm::ivec2 pos) {
 
     chunk.position = pos;
     chunks[pos] = chunk;
-    chunks[pos].rebuildMesh();
 }
 
 void World::generate(int seed) {
@@ -76,6 +75,10 @@ void World::generate(int seed) {
         for (int x = 0; x < size.x; x++) {
             generateChunk(glm::ivec2(x, z));
         }
+    }
+
+    for (auto& [_, chunk] : chunks) {
+        chunk.rebuildMesh();
     }
 }
 
